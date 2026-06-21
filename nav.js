@@ -7,8 +7,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const headerHTML = `
         <header class="bg-white border-b border-slate-100 p-4 sticky top-0 z-50 flex justify-between items-center shadow-sm">
             <div>
-                <h1 class="text-lg font-bold text-slate-800">Keluarga Sastro</h1>
-                <p class="text-xs text-indigo-600 font-medium">Silsilahku</p>
+                <h1 class="text-lg font-bold text-slate-800">SatuMarga</h1>
+                <p class="text-xs text-indigo-600 font-medium">Pohon Keluarga</p>
             </div>
             <nav class="flex space-x-4">
                 <a href="profil.html?id=${userId}" class="text-xs font-bold text-slate-600 hover:text-indigo-600">Profil</a>
