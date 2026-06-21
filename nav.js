@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
             </a>
             <a href="sosial.html" class="flex flex-col items-center text-slate-400 hover:text-indigo-600">
                 <span class="text-xl">📱</span>
-                <span class="text-[10px] font-bold">Medsos</span>
+                <span class="text-[10px] font-bold">Kabar</span>
             </a>
             <a href="acara.html" class="flex flex-col items-center text-slate-400 hover:text-indigo-600">
                 <span class="text-xl">📅</span>
