@@ -3,18 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kabar Keluarga - Silsilahku</title>
+    <title>Kabar Keluarga</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-slate-50 font-sans min-h-screen pb-24">
     <main class="p-6 max-w-md mx-auto space-y-6">
-        <div class="flex justify-between items-center">
-            <h1 class="text-xl font-bold text-slate-800">Kabar Keluarga</h1>
-        </div>
-
+        
         <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm space-y-3">
-            <input type="text" id="input-cerita" placeholder="Bagikan cerita keluarga..." class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm w-full focus:outline-none focus:border-indigo-500">
+            <div class="flex items-center pt-2">
+                <input type="text" id="input-cerita" placeholder="Bagikan cerita keluarga..." class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm w-full focus:outline-none focus:border-indigo-500">
+            </div>
             <p class="text-[10px] text-slate-400 italic text-right">Tekan Enter untuk kirim</p>
         </div>
 
@@ -32,27 +31,32 @@
         const inputCerita = document.getElementById('input-cerita');
         const feedContainer = document.getElementById('feed-container');
 
-        // Fungsi Ambil Data
         async function muatCeritaKeluarga() {
             const { data: posts } = await supabaseClient.from('posts').select('*').order('created_at', { ascending: false });
             if (posts) {
                 feedContainer.innerHTML = posts.map(post => `
-                    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 animate-in fade-in duration-500">
+                    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4">
                         <div class="flex items-center space-x-3 mb-3">
                             <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center font-bold text-indigo-600 text-sm">
-                                ${post.nama_pengirim?.charAt(0) || 'K'}
+                                ${post.nama_pengirim.charAt(0)}
                             </div>
                             <div>
-                                <div class="text-sm font-bold text-slate-800">${post.nama_pengirim} <span class="text-xs font-normal text-slate-400">(${post.hubungan})</span></div>
+                                <div class="text-sm font-bold text-slate-800">${post.nama_pengirim}</div>
+                                <div class="text-[10px] text-slate-400">${post.hubungan}</div>
                             </div>
                         </div>
-                        <p class="text-sm text-slate-700">${post.isi_cerita}</p>
+                        <p class="text-sm text-slate-700 mb-4">${post.isi_cerita}</p>
+                        
+                        <div class="flex border-t border-slate-50 pt-3 space-x-6">
+                            <button class="text-xs text-slate-500 font-bold hover:text-indigo-600">❤️ Suka</button>
+                            <button class="text-xs text-slate-500 font-bold hover:text-indigo-600">💬 Komentar</button>
+                            <button class="text-xs text-slate-500 font-bold hover:text-indigo-600">🔗 Bagikan</button>
+                        </div>
                     </div>
                 `).join('');
             }
         }
 
-        // Fungsi Kirim
         inputCerita.addEventListener('keydown', async (e) => {
             if (e.key === 'Enter') {
                 const nama = localStorage.getItem('nama_keluarga') || "Anonim";
@@ -60,13 +64,11 @@
                 if (inputCerita.value.trim()) {
                     await supabaseClient.from('posts').insert([{ nama_pengirim: nama, hubungan: hubungan, isi_cerita: inputCerita.value }]);
                     inputCerita.value = "";
+                    muatCeritaKeluarga(); // Refresh list otomatis
                 }
             }
         });
 
-        // Realtime: Auto refresh saat ada data baru
-        supabaseClient.channel('any').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, muatCeritaKeluarga).subscribe();
-        
         muatCeritaKeluarga();
     </script>
 </body>
