@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Masuk - Satu Marga</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-50 font-sans min-h-screen flex flex-col justify-center p-4">
+
+    <div class="max-w-md w-full mx-auto bg-white p-6 rounded-2xl border border-slate-100 shadow-md space-y-6">
+        <div class="text-center">
+            <span class="text-4xl">🌳</span>
+            <h1 class="text-xl font-bold text-slate-800 mt-2">Aplikasi Satu Marga</h1>
+            <p id="auth-title" class="text-xs text-slate-500 mt-1">Masuk untuk terhubung dengan keluarga besar</p>
+        </div>
+
+        <div class="space-y-3">
+            <div>
+                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Email Keluarga</label>
+                <input type="email" id="auth-email" placeholder="contoh: budi@email.com" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:border-indigo-500 mt-1">
+            </div>
+            
+            <div>
+                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kata Sandi</label>
+                <input type="password" id="auth-password" placeholder="••••••••" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:border-indigo-500 mt-1">
+            </div>
+
+            <div id="register-fields" class="hidden space-y-3 pt-2 border-t border-slate-100">
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nama Lengkap/Panggilan</label>
+                    <input type="text" id="auth-nama" placeholder="Misal: Budi Sastro" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:border-indigo-500 mt-1">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Hubungan Silsilah</label>
+                    <input type="text" id="auth-hubungan" placeholder="Misal: Cucu Pertama / Anak Paman" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:border-indigo-500 mt-1">
+                </div>
+            </div>
+
+            <button id="btn-utama" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold py-2.5 rounded-lg transition shadow-sm mt-4">
+                Masuk Sekarang
+            </button>
+        </div>
+
+        <div class="text-center space-y-2 pt-2 text-xs">
+            <p id="toggle-text" class="text-slate-500">
+                Belum terdaftar di silsilah? 
+                <button id="btn-toggle-mode" class="text-indigo-600 font-bold hover:underline">Daftar Akun</button>
+            </p>
+            <button id="btn-lupa-sandi" class="text-slate-400 hover:text-indigo-600 hover:underline block mx-auto font-medium">
+                Lupa Kata Sandi?
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://pezeaynamizawbxdywow.supabase.co"; 
+        const SUPABASE_KEY = "sb_publishable_a3Wb0E4F-7mdG4mQAwn4Yw_CnunlYvU"; 
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let isLoginMode = true;
+
+        const authTitle = document.getElementById('auth-title');
+        const registerFields = document.getElementById('register-fields');
+        const btnUtama = document.getElementById('btn-utama');
+        const toggleText = document.getElementById('toggle-text');
+        const btnToggleMode = document.getElementById('btn-toggle-mode');
+        const btnLupaSandi = document.getElementById('btn-lupa-sandi');
+
+        // PERGANTIAN MODE: LOGIN VS DAFTAR
+        btnToggleMode.addEventListener('click', () => {
+            isLoginMode = !isLoginMode;
+            if (isLoginMode) {
+                authTitle.innerText = "Masuk untuk terhubung dengan keluarga besar";
+                registerFields.classList.add('hidden');
+                btnUtama.innerText = "Masuk Sekarang";
+                toggleText.innerHTML = `Belum terdaftar di silsilah? <button id="btn-toggle-mode" class="text-indigo-600 font-bold hover:underline" onclick="document.getElementById('btn-toggle-mode').click()">Daftar Akun</button>`;
+                btnLupaSandi.classList.remove('hidden');
+            } else {
+                authTitle.innerText = "Buat akun baru untuk mengunci profilmu";
+                registerFields.classList.remove('hidden');
+                btnUtama.innerText = "Daftar & Buat Profil";
+                toggleText.innerHTML = `Sudah punya akun keluarga? <button id="btn-toggle-mode" class="text-indigo-600 font-bold hover:underline" onclick="document.getElementById('btn-toggle-mode').click()">Masuk Di Sini</button>`;
+                btnLupaSandi.classList.add('hidden');
+            }
+        });
+
+        // AKSI TOMBOL UTAMA (LOGIN ATAU DAFTAR)
+        btnUtama.addEventListener('click', async () => {
+            const email = document.getElementById('auth-email').value.trim();
+            const password = document.getElementById('auth-password').value.trim();
+
+            if (email === "" || password === "") {
+                alert("Email dan kata sandi harus diisi!");
+                return;
+            }
+
+            if (isLoginMode) {
+                // PROSES 1: LOGIN BETULAN
+                const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+                if (error) {
+                    alert("Gagal masuk: " + error.message);
+                } else {
+                    // Ambil profil dari tabel 'profiles' berdasarkan ID user yang login
+                    const { data: profil, error: profilError } = await supabaseClient
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', data.user.id)
+                        .single();
+                    
+                    if (profil) {
+                        localStorage.setItem('nama_keluarga', profil.nama_keluarga);
+                        localStorage.setItem('hubungan_keluarga', profil.hubungan_keluarga);
+                        window.location.href = "pohon.html";
+                    } else {
+                        // Jika akun ada tapi data profilnya tidak sengaja hilang di database,
+                        // kita berikan penyelamatan otomatis agar tidak ditendang.
+                        const namaDarurat = prompt("Akun terverifikasi, silakan lengkapi nama Anda untuk HP ini:");
+                        const hubunganDarurat = prompt("Masukkan hubungan keluarga (Contoh: Anak Pertama):");
+                        
+                        if (namaDarurat && hubunganDarurat) {
+                            await supabaseClient.from('profiles').insert([{ id: data.user.id, nama_keluarga: namaDarurat, hubungan_keluarga: hubunganDarurat }]);
+                            localStorage.setItem('nama_keluarga', namaDarurat);
+                            localStorage.setItem('hubungan_keluarga', hubunganDarurat);
+                            window.location.href = "pohon.html";
+                        } else {
+                            alert("Profil wajib diisi untuk masuk ke halaman keluarga.");
+                        }
+                    }
+                }
+            } else {
+                // PROSES 2: DAFTAR AKUN + SIMPAN PROFIL
+                const nama = document.getElementById('auth-nama').value.trim();
+                const hubungan = document.getElementById('auth-hubungan').value.trim();
+
+                if (nama === "" || hubungan === "") {
+                    alert("Nama dan hubungan silsilah wajib diisi saat mendaftar!");
+                    return;
+                }
+
+                const { data, error } = await supabaseClient.auth.signUp({ email, password });
+                if (error) {
+                    alert("Gagal mendaftar: " + error.message);
+                } else if (data.user) {
+                    // Simpan identitas fisik ke tabel profiles
+                    await supabaseClient.from('profiles').insert([{ id: data.user.id, nama_keluarga: nama, hubungan_keluarga: hubungan }]);
+                    
+                    localStorage.setItem('nama_keluarga', nama);
+                    localStorage.setItem('hubungan_keluarga', hubungan);
+                    
+                    alert("Pendaftaran berhasil! Akunmu sudah aktif.");
+                    window.location.href = "pohon.html";
+                }
+            }
+        });
+
+        // TOMBOL LUPA KATA SANDI
+        btnLupaSandi.addEventListener('click', async () => {
+            const email = document.getElementById('auth-email').value.trim();
+            if (email === "") {
+                alert("Ketikkan alamat email kamu di kolom di atas terlebih dahulu!");
+                return;
+            }
+            const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+                redirectTo: window.location.origin + '/index.html',
+            });
+            if (error) {
+                alert("Gagal mengirim link reset: " + error.message);
+            } else {
+                alert("Link pengaturan ulang kata sandi sudah dikirim ke email kamu! Silakan periksa kotak masuk atau spam.");
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medsos Keluarga - Silsilahku</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-50 font-sans min-h-screen pb-24">
+
+    <main class="p-6 max-w-md mx-auto space-y-6">
+        
+        <div class="flex justify-between items-center">
+            <h1 class="text-xl font-bold text-slate-800">Kabar Keluarga</h1>
+            <button class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-2 px-4 rounded-lg transition shadow-md">
+                + Cerita Baru
+            </button>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm space-y-3">
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Profil Kamu</label>
+                    <input type="text" id="input-nama" class="bg-slate-100 text-slate-500 border border-slate-200 rounded-lg px-3 py-1.5 text-xs w-full focus:outline-none cursor-not-allowed font-semibold mt-1" readonly>
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Hubungan Silsilah</label>
+                    <input type="text" id="input-hubungan" class="bg-slate-100 text-slate-500 border border-slate-200 rounded-lg px-3 py-1.5 text-xs w-full focus:outline-none cursor-not-allowed font-semibold mt-1" readonly>
+                </div>
+            </div>
+            
+            <div class="flex items-center pt-2 border-t border-slate-100">
+                <input type="text" id="input-cerita" placeholder="Bagikan cerita atau foto jadul hari ini..." class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm w-full focus:outline-none focus:border-indigo-500">
+            </div>
+            <p class="text-[10px] text-slate-400 italic text-right">Tekan Enter untuk mengirim postingan</p>
+        </div>
+
+        <div id="feed-container" class="space-y-4">
+            <p class="text-center text-xs text-slate-400">Memuat cerita keluarga...</p>
+        </div>
+
+    </main>
+
+    <script src="nav.js"></script>
+
+    <script>
+        const SUPABASE_URL = "https://pezeaynamizawbxdywow.supabase.co"; 
+        const SUPABASE_KEY = "sb_publishable_a3Wb0E4F-7mdG4mQAwn4Yw_CnunlYvU"; 
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const inputNama = document.getElementById('input-nama');
+        const inputHubungan = document.getElementById('input-hubungan');
+        const inputCerita = document.getElementById('input-cerita');
+        const feedContainer = document.getElementById('feed-container');
+
+        // Proteksi
+        if (!localStorage.getItem('nama_keluarga')) {
+            window.location.href = "index.html";
+        }
+
+        inputNama.value = localStorage.getItem('nama_keluarga') || "";
+        inputHubungan.value = localStorage.getItem('hubungan_keluarga') || "";
+
+        // Fungsi kirim cerita
+        inputCerita.addEventListener('keydown', async function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const nama = inputNama.value.trim();
+                const hubungan = inputHubungan.value.trim();
+                const teks = inputCerita.value.trim();
+                if (nama && teks) {
+                    await supabaseClient.from('posts').insert([{ nama_pengirim: nama, hubungan: hubungan, isi_cerita: teks }]);
+                    inputCerita.value = "";
+                }
+            }
+        });
+
+        // Muat data
+        async function muatCeritaKeluarga() {
+            const { data: posts } = await supabaseClient.from('posts').select('*').order('created_at', { ascending: false });
+            if (posts) {
+                feedContainer.innerHTML = posts.map(post => `
+                    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4">
+                        <div class="flex items-center space-x-3 mb-3">
+                            <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center font-bold text-indigo-600 text-sm">
+                                ${post.nama_pengirim.charAt(0)}
+                            </div>
+                            <div>
+                                <div class="text-sm font-bold text-slate-800">${post.nama_pengirim} <span class="text-xs font-normal text-slate-400">(${post.hubungan})</span></div>
+                            </div>
+                        </div>
+                        <p class="text-sm text-slate-700">${post.isi_cerita}</p>
+                    </div>
+                `).join('');
+            }
+        }
+        muatCeritaKeluarga();
+    </script>
+</body>
+</html>

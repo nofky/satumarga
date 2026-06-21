@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acara Keluarga - Silsilahku</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-50 font-sans min-h-screen pb-24">
+
+    <main class="p-6 max-w-md mx-auto space-y-6">
+        
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-xl font-bold text-slate-800">Agenda Keluarga</h1>
+                <p class="text-xs text-indigo-600 font-medium">Jangan sampai terlewat!</p>
+            </div>
+            <button id="btn-buka-input" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-2 px-3 rounded-lg transition shadow-sm">
+                + Tambah
+            </button>
+        </div>
+
+        <div id="form-acara" class="hidden bg-white p-4 rounded-xl border border-slate-200 shadow-md space-y-3">
+            <h2 class="text-sm font-bold text-slate-700">Tambah Agenda Baru</h2>
+            <div class="space-y-2">
+                <input type="text" id="form-nama" placeholder="Nama Acara (Misal: Arisan)" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs w-full focus:outline-none focus:border-indigo-500">
+                <div class="grid grid-cols-3 gap-2">
+                    <input type="text" id="form-tanggal" placeholder="Tgl (05)" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs w-full focus:outline-none focus:border-indigo-500">
+                    <input type="text" id="form-bulan" placeholder="Bulan (Jan)" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs w-full focus:outline-none focus:border-indigo-500">
+                    <select id="form-kategori" class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-xs w-full focus:outline-none focus:border-indigo-500 text-slate-500">
+                        <option value="Arisan">Arisan</option>
+                        <option value="Kumpul">Kumpul</option>
+                        <option value="Liburan">Liburan</option>
+                        <option value="Ultah">Ultah</option>
+                    </select>
+                </div>
+                <input type="text" id="form-lokasi" placeholder="Tempat & Jam" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs w-full focus:outline-none focus:border-indigo-500">
+            </div>
+            <div class="flex space-x-2 pt-2">
+                <button id="btn-simpan-acara" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 rounded-lg transition">Simpan</button>
+                <button id="btn-batal" class="bg-slate-100 hover:bg-slate-200 text-slate-500 text-xs font-bold py-2 px-3 rounded-lg transition">Batal</button>
+            </div>
+        </div>
+
+        <div id="acara-container" class="space-y-4">
+            <p class="text-center text-xs text-slate-400 py-8">Memuat agenda keluarga...</p>
+        </div>
+
+    </main>
+
+    <script src="nav.js"></script>
+
+    <script>
+        const supabaseClient = supabase.createClient("https://pezeaynamizawbxdywow.supabase.co", "sb_publishable_a3Wb0E4F-7mdG4mQAwn4Yw_CnunlYvU");
+        const btnBukaInput = document.getElementById('btn-buka-input');
+        const formAcara = document.getElementById('form-acara');
+        const btnBatal = document.getElementById('btn-batal');
+        const btnSimpanAcara = document.getElementById('btn-simpan-acara');
+        const acaraContainer = document.getElementById('acara-container');
+
+        btnBukaInput.addEventListener('click', () => formAcara.classList.remove('hidden'));
+        btnBatal.addEventListener('click', () => formAcara.classList.add('hidden'));
+
+        btnSimpanAcara.addEventListener('click', async function() {
+            const nama = document.getElementById('form-nama').value.trim();
+            const tanggal = document.getElementById('form-tanggal').value.trim();
+            const bulan = document.getElementById('form-bulan').value.trim();
+            const kategori = document.getElementById('form-kategori').value;
+            const lokasi = document.getElementById('form-lokasi').value.trim();
+
+            if (nama && tanggal && bulan && lokasi) {
+                await supabaseClient.from('agenda_acara').insert([{ nama_acara: nama, kategori: kategori, tanggal: tanggal, bulan: bulan, lokasi_jam: lokasi }]);
+                formAcara.classList.add('hidden');
+                document.getElementById('form-nama').value = "";
+            }
+        });
+
+        async function muatAgendaAcara() {
+            const { data: listAcara } = await supabaseClient.from('agenda_acara').select('*').order('created_at', { ascending: false });
+            if (listAcara) {
+                acaraContainer.innerHTML = listAcara.map(a => `
+                    <div class="bg-white rounded-xl border border-slate-100 shadow-sm flex overflow-hidden">
+                        <div class="bg-indigo-600 text-white w-20 flex flex-col items-center justify-center p-3 text-center">
+                            <span class="text-[10px] uppercase font-bold opacity-75">${a.bulan}</span>
+                            <span class="text-xl font-black">${a.tanggal}</span>
+                        </div>
+                        <div class="p-4">
+                            <span class="bg-indigo-50 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">${a.kategori}</span>
+                            <h3 class="text-sm font-bold text-slate-800 mt-1">${a.nama_acara}</h3>
+                            <p class="text-[10px] text-slate-500 mt-0.5">📍 ${a.lokasi_jam}</p>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+        muatAgendaAcara();
+
+        supabaseClient.channel('room-acara').on('postgres_changes', { event: '*', schema: 'public', table: 'agenda_acara' }, muatAgendaAcara).subscribe();
+    </script>
+</body>
+</html>
