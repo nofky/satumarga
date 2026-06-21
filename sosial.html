@@ -31,30 +31,29 @@
         const inputCerita = document.getElementById('input-cerita');
         const feedContainer = document.getElementById('feed-container');
 
-        // Fungsi Kirim Komentar
         async function kirimKomentar(postId) {
             const isi = prompt("Tulis komentar kamu:");
             if (isi && isi.trim() !== "") {
                 const nama = localStorage.getItem('nama_keluarga') || "Anonim";
-                const { error } = await supabaseClient.from('comments').insert([{ 
-                    post_id: postId, 
-                    nama_pengirim: nama, 
-                    isi_komentar: isi 
-                }]);
-                
-                if (error) {
-                    alert("Gagal mengirim komentar: " + error.message);
-                } else {
-                    alert("Komentar terkirim!");
-                    muatCeritaKeluarga(); 
-                }
+                await supabaseClient.from('comments').insert([{ post_id: postId, nama_pengirim: nama, isi_komentar: isi }]);
+                alert("Komentar terkirim!");
+                muatCeritaKeluarga(); 
             }
         }
 
         async function muatCeritaKeluarga() {
-            const { data: posts } = await supabaseClient.from('posts').select('*').order('created_at', { ascending: false });
+            const { data: posts } = await supabaseClient.from('posts').select(`*, comments (id, nama_pengirim, isi_komentar)`).order('created_at', { ascending: false });
+            
             if (posts) {
-                feedContainer.innerHTML = posts.map(post => `
+                feedContainer.innerHTML = posts.map(post => {
+                    const daftarKomentar = post.comments.map(c => `
+                        <div class="bg-slate-50 p-2 rounded-lg mt-1">
+                            <p class="text-[10px] font-bold text-slate-700">${c.nama_pengirim}</p>
+                            <p class="text-[11px] text-slate-600">${c.isi_komentar}</p>
+                        </div>
+                    `).join('');
+
+                    return `
                     <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4">
                         <div class="flex items-center space-x-3 mb-3">
                             <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center font-bold text-indigo-600 text-sm">
@@ -72,20 +71,20 @@
                             <button onclick="kirimKomentar(${post.id})" class="text-xs text-slate-500 font-bold hover:text-indigo-600">💬 Komentar</button>
                             <button onclick="navigator.clipboard.writeText(window.location.href); alert('Link disalin!')" class="text-xs text-slate-500 font-bold hover:text-indigo-600">🔗 Bagikan</button>
                         </div>
-                    </div>
-                `).join('');
+                        
+                        <div class="mt-2 space-y-1">${daftarKomentar}</div>
+                    </div>`;
+                }).join('');
             }
         }
 
         inputCerita.addEventListener('keydown', async (e) => {
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' && inputCerita.value.trim()) {
                 const nama = localStorage.getItem('nama_keluarga') || "Anonim";
                 const hubungan = localStorage.getItem('hubungan_keluarga') || "Keluarga";
-                if (inputCerita.value.trim()) {
-                    await supabaseClient.from('posts').insert([{ nama_pengirim: nama, hubungan: hubungan, isi_cerita: inputCerita.value }]);
-                    inputCerita.value = "";
-                    muatCeritaKeluarga();
-                }
+                await supabaseClient.from('posts').insert([{ nama_pengirim: nama, hubungan: hubungan, isi_cerita: inputCerita.value }]);
+                inputCerita.value = "";
+                muatCeritaKeluarga();
             }
         });
 
